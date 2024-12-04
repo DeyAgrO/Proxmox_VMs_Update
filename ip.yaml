@@ -1,0 +1,23 @@
+- name: Get IP Address
+  hosts: pve
+
+  vars_files:
+    - # secret.yaml
+
+
+  tasks:
+    - name: List all existing machines on node
+      community.general.proxmox_vm_info:
+        api_host: # API Host 
+        api_user: root@pam
+        api_token_id: "{{ pve_id }}"
+        api_token_secret: "{{ pve_sec }}"
+        vmid: #<number>
+        network: true
+      register: pve_machines
+
+    - name: Set fact for network information
+      set_fact:
+        machine_ip: "{{ item.inet.split('/')[0] }}"
+      loop: "{{ pve_machines.proxmox_vms[0].network }}"
+      when: item.name == # NIC

@@ -1,0 +1,18 @@
+- name: Load variables from YAML file
+  ansible.builtin.include_vars:
+    file: ./PVE_Machines.yaml
+    name: original_machine_data  # This will create a variable named `machine_data`
+
+- name: Check state of machine with ID 100
+  set_fact:
+    original_machine_state: "{{item.State}}"
+  when: item.Vmid == vm_machine.Vmide
+  loop: "{{ original_machine_data }}"
+
+- name: Turn off machine if Original State is not running
+  include_tasks: change_state_qemu.yaml
+  when: 
+    - original_machine_state == "stopped"
+    - item.Type == "lxc"
+  vars:
+   lxc_machine_state: "stopped"

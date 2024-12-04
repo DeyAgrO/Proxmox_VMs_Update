@@ -1,0 +1,13 @@
+Hostname {{ vm_machine.Hostname }}
+VMID: {{ vm_machine.Vmid }}
+OS-Version: {{ os_type.stdout }}
+IP: {{ machine_ip }}
+Type: {{ vm_machine.Type }}
+----- Stdrr Output Begin -----
+{% if os_type.stdout in debian %}
+{{ debian_upgrade.stdout_lines[-3:] | join('\n') }}
+{% elif os_type.stdout in rhel %}
+{{ rhel_upgrade.stdout_lines[-3:] | join('\n') }}
+{% endif %}
+------------ END ------------
+

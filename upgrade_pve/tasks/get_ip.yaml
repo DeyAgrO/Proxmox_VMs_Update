@@ -1,0 +1,26 @@
+- name: List all existing machines on node
+  community.general.proxmox_vm_info:
+    api_host: "{{ pve_host }}"
+    api_user: "{{ pve_user }}"
+    api_token_id: "{{ pve_id }}"
+    api_token_secret: "{{ pve_sec }}"
+    vmid: "{{ vm_machine.Vmid }}"
+    network: true
+  register: pve_machines_net
+
+- name: Get the IP of Device "{{ item.name }}"
+  set_fact:
+    machine_ip: "{{ item['ip-addresses'][0]['ip-address'] }}"
+  loop: "{{ pve_machines_net.proxmox_vms[0].network }}"
+  when: 
+    - item.name == "eth0"
+    - vm_machine.Type == "qemu"
+
+# This sounds that only works on LXC containers
+- name: Get the IP of Device "{{ item.name }}"
+  set_fact:
+    machine_ip: "{{ item.inet.split('/')[0] }}"
+  loop: "{{ pve_machines_net.proxmox_vms[0].network }}"
+  when: 
+    - item.name == "eth0"
+    - vm_machine.Type == "lxc"

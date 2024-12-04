@@ -1,0 +1,7 @@
+- Hostname: alma-rhcsa
+  IP: []
+  Node: pveM
+  State: stopped
+  Tags: [ibra]
+  Type: qemu
+  Vmid: 9810

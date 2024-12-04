@@ -1,0 +1,17 @@
+- name: Create Prod Machines List
+  hosts: pve
+
+  vars:
+    pve_host: <IP_Address>
+    pve_user: root@pam
+    remote_pvem_user: <user>
+    # tag:
+    #   - tag1
+    #   - tag2
+    vid: <number>
+
+  vars_files:
+    - secret_sorint.yaml
+
+  roles:
+    - upgrade_pve

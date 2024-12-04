@@ -1,0 +1,9 @@
+- name: Start LXC Container
+  community.general.proxmox:
+    api_user: "{{pve_user}}"
+    api_host: "{{pve_host}}"
+    api_token_id: "{{ pve_id }}"
+    api_token_secret: "{{ pve_sec }}"
+    vmid: "{{vm_machine.Vmid}}"
+    state: "{{lxc_machine_state}}"
+  async: 600

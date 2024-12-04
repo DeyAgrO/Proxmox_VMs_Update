@@ -1,0 +1,12 @@
+# defaults file for upgrade_pve
+
+debian:
+  - debian
+  - ubuntu
+rhel:
+  - fedora
+  - centos
+  - almalinux
+  - oracle
+alpine:
+  - alpine

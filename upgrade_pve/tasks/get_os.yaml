@@ -1,0 +1,9 @@
+
+- name: Get OS Version
+  ansible.builtin.shell: | 
+    ssh {{ 'root' if vm_machine.Type == 'lxc' else remote_pvem_user }}@{{machine_ip}} \
+    -i /tmp/ansible_ssh_key \
+    -o StrictHostKeyChecking=no \
+    "awk -F= '/^ID=/{print \$2}' /etc/os-release | tr -d '\"' | tr -d ' '"
+  register: os_type
+  when: vm_machine.Type in ['lxc', 'qemu']

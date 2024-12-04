@@ -1,0 +1,33 @@
+# Turn On LXC if it is OFF
+- name: LXC Power Control
+  include_tasks: change_state_lxc.yaml
+  when: vm_machine.Type == "lxc" and vm_machine.State == "stopped"
+  vars:
+   lxc_machine_state: "started"
+
+
+# Turn On QEMU if it is OFF
+- name: QEMU Power Control
+  include_tasks: change_state_qemu.yaml
+  when: vm_machine.Type == "qemu" and vm_machine.State == "stopped"
+  vars:
+   qemu_machine_state: "started"
+
+# Get IP Address of the machine and save it to ( machine_ip ) fact
+- include_tasks: get_ip.yaml
+
+# Get System Information and save it to ( os_type.stdout )
+- include_tasks: get_os.yaml
+
+# Run Remote Upgrade Commands 
+- include_tasks: remote_commands.yaml
+
+# Get back machine to its original state
+# - include_tasks: original_state.yaml
+
+# Turn On QEMU if it is OFF
+- name: QEMU Power Control
+  include_tasks: change_state_qemu.yaml
+  when: vm_machine.Type == "qemu" and vm_machine.State == "stopped"
+  vars:
+   qemu_machine_state: "stopped"

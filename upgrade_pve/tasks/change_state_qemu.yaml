@@ -1,0 +1,36 @@
+- name: Start QEMU
+  community.general.proxmox_kvm:
+    api_user: "{{pve_user}}"
+    api_host: "{{pve_host}}"
+    api_token_id: "{{ pve_id }}"
+    api_token_secret: "{{ pve_sec }}"
+    vmid: "{{vm_machine.Vmid}}"
+    state: "{{qemu_machine_state}}"
+  when: vm_machine.State == "stopped" and vm_machine.Type == "qemu"
+
+# - name: Stop QEMU
+#   community.general.proxmox_kvm:
+#     api_user: "{{pve_user}}"
+#     api_host: "{{pve_host}}"
+#     api_token_id: "{{ pve_id }}"
+#     api_token_secret: "{{ pve_sec }}"
+#     vmid: "{{vm_machine.Vmid}}"
+#     state: stopped
+#   when: vm_machine.State == "running" and vm_machine.Type == "qemu"
+
+- name: Wait until the machine is running
+  block:
+    - name: Wait for machine with ID 100 to be running
+      ansible.builtin.pause:
+        seconds: 5  # Wait for 5 seconds before checking again
+
+    - name: Re-check machine state
+      set_fact:
+        machine_state: "{{ item.state }}"
+      when: item.id == 100
+      loop: "{{ machine_data.machines }}"
+      register: recheck_result
+
+  until: recheck_result is defined and recheck_result.results | selectattr('item.id', 'equalto', 100) | map(attribute='machine_state') | first == 'running'
+  retries: 10  # Maximum number of retries
+  delay: 5     # Delay between retries in seconds

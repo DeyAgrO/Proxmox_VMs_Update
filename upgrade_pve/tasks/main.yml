@@ -1,0 +1,27 @@
+---
+
+# Gather Information about selected Tag or All Machines and register them to vm_info Variable
+- import_tasks: gather_facts.yaml
+
+# Create SSH Key temp file & LOG Report & PVE Machines YAML
+- name: Create Needed files
+  include_tasks: files_creation.yaml
+  vars:
+   vm_file: "{{vm_info}}"
+
+# Include task Upgrade
+- name: Upgrade Machines One By One
+  include_tasks: upgrade_machine.yaml
+  loop: "{{vm_info}}"
+  loop_control:
+    loop_var: vm_machine
+
+
+
+# Upgrade the Machine
+# if down turn it up 
+# if up leave it as it is and get ip address
+# Upgrade the machine
+# if it was up leave it be
+# if it was down turn it of
+# repeat for the after

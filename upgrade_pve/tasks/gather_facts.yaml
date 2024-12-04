@@ -1,0 +1,58 @@
+---
+# tasks file for upgrade_pve
+
+# Default PVE Host Variables and Configs
+- name: List all existing machines on node
+  community.general.proxmox_vm_info:
+    api_host: "{{ pve_host }}"
+    api_user: "{{ pve_user }}"
+    api_token_id: "{{ pve_id }}"
+    api_token_secret: "{{ pve_sec }}"
+    vmid: "{{ vid | default(omit) }}"
+  register: pve_machines
+
+# Initiate A List
+- name: Initialize an empty list for VM info
+  set_fact:
+    vm_info: []
+
+# Register Tagged PVE Machines
+- name: Register PVE Machines tagged with "{{tag}}"
+  set_fact:
+    vm_info: >-
+      {{ vm_info + [
+          {
+            'Hostname': item.name,
+            'Vmid': item.vmid,
+            'State': item.status,
+            'Node': item.node,
+            'Tags': (item.tags | default() | split(';')),
+            'IP': (item.network | default([])),
+            'Type': item.type
+          }
+        ]
+      }}
+  loop: "{{ pve_machines.proxmox_vms }}"
+  when:
+   - item.tags is defined
+   - tag | intersect(item.tags | split(';')) | length > 0
+
+# Register ALL PVE Machines
+- name: Register PVE Machines Without TAG
+  set_fact:
+    vm_info: >-
+      {{ vm_info + [
+          {
+            'Hostname': item.name,
+            'Vmid': item.vmid,
+            'State': item.status,
+            'Node': item.node,
+            'Tags': (item.tags | default() | split(';')),
+            'IP': (item.network | default([])),
+            'Type': item.type
+          }
+        ]
+      }}
+  loop: "{{ pve_machines.proxmox_vms }}"
+  when:
+   - tag | length == 0

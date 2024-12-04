@@ -1,0 +1,46 @@
+---
+ # Upgrade Debian Based Machines
+- name: Upgrade Debian Machine {{ vm_machine.Hostname }} with OS {{ os_type.stdout }}
+  ansible.builtin.shell: |
+    ssh {{ 'root' if vm_machine.Type == 'lxc' else remote_pvem_user }}@{{machine_ip}} \
+    -i /tmp/ansible_ssh_key \
+    -o StrictHostKeyChecking=no \
+    "{{ 'apt' if vm_machine.Type == 'lxc' else 'sudo apt' }} update -y && {{ 'apt' if vm_machine.Type == 'lxc' else 'sudo apt' }} upgrade -y"
+  when:
+    - os_type.stdout in debian
+    - vm_machine.Type in ['lxc', 'qemu']
+  register: debian_upgrade
+
+# Generate Debian Machine Report and append it to report.log
+- name: Copy content to report.log
+  blockinfile:
+    dest: ./report.log
+    block: "{{ lookup('template', 'report.j2') }}"
+    marker: "<-- {mark} {{vm_machine.Hostname}} Machine Report -->"
+    insertafter: "<-- END*"
+  delegate_to: localhost
+  become: false
+  when: debian_upgrade is not skipped
+
+ # Upgrade RHEL Based Machines
+- name: Upgrade QEMU Machine {{ vm_machine.Hostname }} with OS Version {{ os_type.stdout }}
+  ansible.builtin.shell: |
+    ssh {{ 'root' if vm_machine.Type == 'lxc' else remote_pvem_user }}@{{machine_ip}} \
+    -i /tmp/ansible_ssh_key \
+    -o StrictHostKeyChecking=no \
+    "{{ 'dnf' if vm_machine.Type == 'lxc' else 'sudo dnf' }} upgrade -y"
+  when:
+    - os_type.stdout in rhel
+    - vm_machine.Type in ['lxc', 'qemu']
+  register: rhel_upgrade
+
+# Generate RHEL Machine Report and append it to report.log
+- name: Copy content to report.log
+  blockinfile:
+    dest: ./report.log
+    block: "{{ lookup('template', 'report.j2') }}"
+    marker: "<-- {mark} {{vm_machine.Hostname}} Machine Report -->"
+    insertafter: "<-- END*"
+  delegate_to: localhost
+  become: false
+  when: rhel_upgrade is not skipped
