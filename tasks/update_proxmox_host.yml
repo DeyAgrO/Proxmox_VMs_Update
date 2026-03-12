@@ -1,0 +1,66 @@
+---
+- name: Update apt package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: "{{ proxmox_update_cache_valid_time }}"
+  tags:
+    - host
+    - update
+
+- name: Upgrade all packages ({{ proxmox_update_upgrade_type }}-upgrade)
+  ansible.builtin.apt:
+    upgrade: "{{ proxmox_update_upgrade_type }}"
+  register: _proxmox_upgrade_result
+  tags:
+    - host
+    - update
+
+- name: Remove unused packages (autoremove)
+  ansible.builtin.apt:
+    autoremove: true
+  when: proxmox_update_autoremove | bool
+  tags:
+    - host
+    - update
+
+- name: Remove cached package files (autoclean)
+  ansible.builtin.apt:
+    autoclean: true
+  when: proxmox_update_autoclean | bool
+  tags:
+    - host
+    - update
+
+- name: Check if a reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: _proxmox_reboot_required
+  tags:
+    - host
+    - update
+    - reboot
+
+- name: Reboot host if required and reboot is enabled
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ proxmox_update_reboot_timeout }}"
+    msg: "Rebooting after Proxmox package upgrade"
+  when:
+    - proxmox_update_reboot | bool
+    - _proxmox_reboot_required.stat.exists
+  tags:
+    - host
+    - update
+    - reboot
+
+- name: Warn if reboot is required but not enabled
+  ansible.builtin.debug:
+    msg: >-
+      A reboot is required on {{ inventory_hostname }} but
+      'proxmox_update_reboot' is set to false. Please reboot manually.
+  when:
+    - not (proxmox_update_reboot | bool)
+    - _proxmox_reboot_required.stat.exists
+  tags:
+    - host
+    - update
+    - reboot

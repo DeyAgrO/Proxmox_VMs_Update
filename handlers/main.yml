@@ -1,0 +1,4 @@
+---
+# Handlers are not used directly in this role because reboots are controlled
+# by task-level conditionals (proxmox_update_reboot variable).
+# This file is kept to satisfy the standard Ansible role structure.

@@ -1,0 +1,15 @@
+---
+- name: Update Proxmox host packages
+  ansible.builtin.include_tasks: update_proxmox_host.yml
+  tags:
+    - proxmox
+    - host
+    - update
+
+- name: Update LXC containers
+  ansible.builtin.include_tasks: update_lxc_containers.yml
+  when: proxmox_update_lxc | bool
+  tags:
+    - proxmox
+    - lxc
+    - update

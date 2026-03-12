@@ -1,0 +1,6 @@
+---
+# Internal constants — not intended to be overridden by users.
+
+# Shell command to list all LXC containers with their VMID and status
+# Output format: "<vmid> <status> <name>"
+_proxmox_lxc_list_cmd: "pct list | awk 'NR>1 {print $1, $2}'"

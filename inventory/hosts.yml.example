@@ -1,0 +1,33 @@
+---
+# Example Ansible inventory for Proxmox_VMs_Update
+# Copy this file to 'hosts.yml' and fill in your real hostnames/IPs.
+#
+# Groups:
+#   proxmox_nodes  — Proxmox VE hypervisor hosts (updated via the role)
+#   proxmox_vms    — VM guests reachable via SSH (updated by the second play)
+#
+# LXC containers do NOT need to be in this inventory — they are discovered
+# automatically via 'pct list' on each Proxmox node.
+
+all:
+  children:
+    proxmox_nodes:
+      hosts:
+        pve01:
+          ansible_host: 192.168.1.10
+        pve02:
+          ansible_host: 192.168.1.11
+      vars:
+        ansible_user: root
+        # ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+
+    proxmox_vms:
+      hosts:
+        vm-ubuntu01:
+          ansible_host: 192.168.1.101
+        vm-debian01:
+          ansible_host: 192.168.1.102
+      vars:
+        ansible_user: ansible
+        ansible_become: true
+        # ansible_ssh_private_key_file: ~/.ssh/id_ed25519

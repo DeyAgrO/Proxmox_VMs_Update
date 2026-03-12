@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: proxmox_vms_update
+  author: DeyAgrO
+  description: Ansible role to update Proxmox VE hosts, LXC containers, and VM guests
+  license: Apache-2.0
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
+  galaxy_tags:
+    - proxmox
+    - update
+    - upgrade
+    - apt
+    - lxc
+    - virtualization
+    - system
+
+dependencies: []
