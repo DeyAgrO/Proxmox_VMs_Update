@@ -1,0 +1,29 @@
+---
+# Whether to reboot the Proxmox host after an upgrade if a reboot is required
+proxmox_update_reboot: false
+
+# Seconds to wait for the host to come back online after a reboot
+proxmox_update_reboot_timeout: 600
+
+# apt upgrade type: 'safe', 'full', or 'dist'
+# 'dist' is recommended for Proxmox to handle kernel and dependency changes
+proxmox_update_upgrade_type: "dist"
+
+# Run 'apt autoremove' after the upgrade to clean up unused packages
+proxmox_update_autoremove: true
+
+# Run 'apt autoclean' after the upgrade to free up disk space
+proxmox_update_autoclean: true
+
+# Seconds before the apt cache is considered stale; 0 means always refresh
+proxmox_update_cache_valid_time: 0
+
+# Update LXC containers running on this Proxmox node via 'pct exec'
+# Only containers with status 'running' and an apt-based OS will be updated
+proxmox_update_lxc: true
+
+# If true, skip LXC containers that are stopped (do not start them to update)
+proxmox_update_skip_stopped_lxc: true
+
+# Timeout in seconds for each apt command run inside an LXC container
+proxmox_update_lxc_timeout: 300

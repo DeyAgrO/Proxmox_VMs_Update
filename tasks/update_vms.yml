@@ -1,0 +1,69 @@
+---
+# This task file is used in the second play of playbook.yml which targets
+# VM guests directly via SSH. It is NOT included from tasks/main.yml.
+
+- name: Update apt package cache on VM guest
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: "{{ proxmox_update_cache_valid_time }}"
+  tags:
+    - vms
+    - update
+
+- name: Upgrade all packages on VM guest
+  ansible.builtin.apt:
+    upgrade: "{{ proxmox_update_upgrade_type }}"
+  register: _vm_upgrade_result
+  tags:
+    - vms
+    - update
+
+- name: Remove unused packages on VM guest (autoremove)
+  ansible.builtin.apt:
+    autoremove: true
+  when: proxmox_update_autoremove | bool
+  tags:
+    - vms
+    - update
+
+- name: Remove cached package files on VM guest (autoclean)
+  ansible.builtin.apt:
+    autoclean: true
+  when: proxmox_update_autoclean | bool
+  tags:
+    - vms
+    - update
+
+- name: Check if VM guest requires a reboot
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: _vm_reboot_required
+  tags:
+    - vms
+    - update
+    - reboot
+
+- name: Reboot VM guest if required and reboot is enabled
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ proxmox_update_reboot_timeout }}"
+    msg: "Rebooting VM after package upgrade"
+  when:
+    - proxmox_update_reboot | bool
+    - _vm_reboot_required.stat.exists
+  tags:
+    - vms
+    - update
+    - reboot
+
+- name: Warn if VM guest reboot is required but not enabled
+  ansible.builtin.debug:
+    msg: >-
+      A reboot is required on {{ inventory_hostname }} but
+      'proxmox_update_reboot' is set to false. Please reboot manually.
+  when:
+    - not (proxmox_update_reboot | bool)
+    - _vm_reboot_required.stat.exists
+  tags:
+    - vms
+    - update
+    - reboot

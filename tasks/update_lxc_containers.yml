@@ -1,0 +1,116 @@
+---
+- name: Get list of LXC containers and their status
+  ansible.builtin.shell:
+    cmd: "{{ _proxmox_lxc_list_cmd }}"
+  register: _proxmox_lxc_list
+  changed_when: false
+  tags:
+    - lxc
+    - update
+
+- name: Parse LXC container list into a structured variable
+  ansible.builtin.set_fact:
+    _proxmox_lxc_containers: >-
+      {{
+        _proxmox_lxc_list.stdout_lines
+        | map('split', ' ')
+        | map('list')
+        | map(attribute=0)
+        | zip(_proxmox_lxc_list.stdout_lines | map('split', ' ') | map(attribute=1))
+        | map('list')
+        | list
+      }}
+  when: _proxmox_lxc_list.stdout_lines | length > 0
+  tags:
+    - lxc
+    - update
+
+# Build a list of dicts: [{vmid: "100", status: "running"}, ...]
+- name: Build LXC container info list
+  ansible.builtin.set_fact:
+    _proxmox_lxc_info: >-
+      {{
+        _proxmox_lxc_list.stdout_lines
+        | map('regex_findall', '^(\d+)\s+(\S+)')
+        | select('ne', [])
+        | map('first')
+        | map('zip', ['vmid', 'status'])
+        | map('map', 'reverse')
+        | map('community.general.dict')
+        | list
+      }}
+  when: _proxmox_lxc_list.stdout_lines | length > 0
+  tags:
+    - lxc
+    - update
+
+- name: Update apt cache inside each running LXC container
+  ansible.builtin.command:
+    cmd: "pct exec {{ item.vmid }} -- apt-get update -q"
+  loop: "{{ _proxmox_lxc_info | default([]) }}"
+  loop_control:
+    label: "CT {{ item.vmid }} ({{ item.status }})"
+  when: >-
+    item.status == 'running' or
+    (not (proxmox_update_skip_stopped_lxc | bool) and item.status == 'stopped')
+  register: _lxc_apt_update
+  changed_when: false
+  failed_when: _lxc_apt_update.rc not in [0, 100]
+  async: "{{ proxmox_update_lxc_timeout }}"
+  poll: 5
+  tags:
+    - lxc
+    - update
+
+- name: Upgrade packages inside each running LXC container
+  ansible.builtin.command:
+    cmd: >-
+      pct exec {{ item.vmid }} --
+      apt-get dist-upgrade -y -q
+      -o Dpkg::Options::="--force-confdef"
+      -o Dpkg::Options::="--force-confold"
+  loop: "{{ _proxmox_lxc_info | default([]) }}"
+  loop_control:
+    label: "CT {{ item.vmid }} ({{ item.status }})"
+  when: >-
+    item.status == 'running' or
+    (not (proxmox_update_skip_stopped_lxc | bool) and item.status == 'stopped')
+  register: _lxc_apt_upgrade
+  changed_when: "'0 upgraded' not in _lxc_apt_upgrade.stdout"
+  failed_when: _lxc_apt_upgrade.rc not in [0]
+  async: "{{ proxmox_update_lxc_timeout }}"
+  poll: 5
+  tags:
+    - lxc
+    - update
+
+- name: Run autoremove inside each running LXC container
+  ansible.builtin.command:
+    cmd: "pct exec {{ item.vmid }} -- apt-get autoremove -y -q"
+  loop: "{{ _proxmox_lxc_info | default([]) }}"
+  loop_control:
+    label: "CT {{ item.vmid }} ({{ item.status }})"
+  when:
+    - proxmox_update_autoremove | bool
+    - >-
+      item.status == 'running' or
+      (not (proxmox_update_skip_stopped_lxc | bool) and item.status == 'stopped')
+  changed_when: false
+  async: "{{ proxmox_update_lxc_timeout }}"
+  poll: 5
+  tags:
+    - lxc
+    - update
+
+- name: Print LXC update summary
+  ansible.builtin.debug:
+    msg: >-
+      Container {{ item.item.vmid }} upgrade result:
+      {{ item.stdout_lines | last | default('no output') }}
+  loop: "{{ _lxc_apt_upgrade.results | default([]) }}"
+  loop_control:
+    label: "CT {{ item.item.vmid }}"
+  when: item.stdout_lines is defined
+  tags:
+    - lxc
+    - update

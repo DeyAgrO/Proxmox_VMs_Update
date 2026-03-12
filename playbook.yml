@@ -1,0 +1,57 @@
+---
+# Proxmox_VMs_Update — main playbook
+#
+# Play 1: Update Proxmox VE hypervisor nodes and their LXC containers.
+#         Runs as root on the Proxmox hosts; uses 'pct exec' for LXC guests.
+#
+# Play 2: Update VM guests directly via SSH.
+#         Targets the 'proxmox_vms' inventory group.
+#         Remove this play if you manage VM updates separately.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml
+#
+# Dry-run:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --check
+#
+# Update only Proxmox hosts (skip LXC and VMs):
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --tags host
+#
+# Update only LXC containers:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --tags lxc
+#
+# Update only VM guests:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --tags vms
+#
+# Enable automatic reboots:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml -e proxmox_update_reboot=true
+
+- name: Update Proxmox nodes and LXC containers
+  hosts: proxmox_nodes
+  become: true
+  gather_facts: true
+
+  vars:
+    # Override defaults here or pass via -e on the command line.
+    # proxmox_update_reboot: false
+    # proxmox_update_upgrade_type: dist
+    # proxmox_update_lxc: true
+
+  roles:
+    - role: proxmox_vms_update
+
+- name: Update VM guests via SSH
+  hosts: proxmox_vms
+  become: true
+  gather_facts: true
+
+  vars:
+    # proxmox_update_reboot: false
+    # proxmox_update_upgrade_type: dist
+
+  tasks:
+    - name: Update VM guest packages
+      ansible.builtin.include_tasks: tasks/update_vms.yml
+      tags:
+        - vms
+        - update
